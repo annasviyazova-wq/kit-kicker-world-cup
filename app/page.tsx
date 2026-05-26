@@ -81,7 +81,7 @@ export default async function Home({
             </p>
           </div>
           <div className="rounded-md border border-black bg-accent p-5 shadow-[6px_6px_0_#141414]">
-            <p className="text-sm font-black uppercase">СТАВКИ ПРИНЯТЫ, А НА КОНУ ПРИЗ</p>
+            <p className="text-sm font-black uppercase">СТАВКИ ПРИНЯТЫ, ***А НА КОНУ</p>
             <p className="mt-3 text-3xl font-black leading-tight">Макс свистит в свисток. Аня держит сетку в порядке.</p>
             <p className="mt-3 text-sm">Угадывай победителя на каждом этапе. Самый везучий Кит заберет приз, а остальные будут думать, что все куплено.</p>
           </div>
