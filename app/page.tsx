@@ -74,16 +74,16 @@ export default async function Home({
           <div>
             <p className="text-xs font-black uppercase tracking-wide text-accentText">Яндекс Кит · офисный ЧМ по кикеру</p>
             <h1 className="mt-2 max-w-3xl text-4xl font-black leading-tight sm:text-6xl">
-              Кикер, киты и лишь одна команда-чемпион
+              ЧМ &quot;ОДИН-КИТ-БЕТ&quot;
             </h1>
             <p className="mt-4 max-w-2xl text-base text-ink/70">
-              Без денег. Только баллы и шанс сделать правильный выбор на каждом этапе этого ЧМ.
+              Кикер, киты и лишь одна команда-чемпион
             </p>
           </div>
           <div className="rounded-md border border-black bg-accent p-5 shadow-[6px_6px_0_#141414]">
             <p className="text-sm font-black uppercase">ПРОГНОЗЫ ПРИНЯТЫ, СЛАВА НА КОНУ</p>
             <p className="mt-3 text-3xl font-black leading-tight">Макс свистит в свисток. Аня держит сетку в порядке.</p>
-            <p className="mt-3 text-sm">Выберите победителя. Лучший кит заберет приз, а остальные — опыт, драму и много веселья.</p>
+            <p className="mt-3 text-sm">Угадывай победителя на каждом этапе. Самый везучий кит заберет приз, а остальные будут думать, что все куплено.</p>
           </div>
           <div className="lg:col-span-2">
             <HeroMemeArena />
