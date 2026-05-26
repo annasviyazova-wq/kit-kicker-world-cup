@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #141414;
+  background: #faf8f2;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 204, 0, 0.22), transparent 32rem),
+    linear-gradient(180deg, #fffdf7 0%, #f7f5ef 100%);
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+@keyframes football-bounce {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  45% {
+    transform: translate3d(0, -18px, 0) rotate(18deg);
+  }
+}
+
+@keyframes trophy-pop {
+  0%, 100% {
+    transform: rotate(-5deg) scale(1);
+  }
+  50% {
+    transform: rotate(6deg) scale(1.08);
+  }
+}
+
+@keyframes whale-cheer {
+  0%, 100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(2deg);
+  }
+}
+
+@keyframes whale-sad {
+  0%, 100% {
+    transform: translateY(0) rotate(1deg);
+  }
+  50% {
+    transform: translateY(5px) rotate(-2deg);
+  }
+}
+
+@keyframes stadium-sweep {
+  0% {
+    transform: translateX(-24%);
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.58;
+  }
+  100% {
+    transform: translateX(24%);
+    opacity: 0.2;
+  }
+}
+
+@keyframes sad-rain {
+  0% {
+    transform: translateY(-18px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateY(34px);
+    opacity: 0;
+  }
+}
+
+.animate-football-bounce {
+  animation: football-bounce 1.15s ease-in-out infinite;
+}
+
+.animate-trophy-pop {
+  animation: trophy-pop 1.6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.animate-whale-cheer {
+  animation: whale-cheer 1.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-whale-sad {
+  animation: whale-sad 1.9s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-stadium-sweep {
+  animation: stadium-sweep 3.4s ease-in-out infinite;
+}
+
+.animate-sad-rain {
+  animation: sad-rain 1.7s linear infinite;
+}
