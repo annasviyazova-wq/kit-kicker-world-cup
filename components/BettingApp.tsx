@@ -27,6 +27,10 @@ function isBettingOpen(match: Match) {
   return match.status === "open" && new Date(match.deadline).getTime() > Date.now();
 }
 
+function normalizeForCompare(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 function pointsText(points: number) {
   if (points === 1) return "+1 балл";
   if (points > 1 && points < 5) return `+${points} балла`;
@@ -159,10 +163,31 @@ export function BettingApp({ matches, leaderboard }: { matches: Match[]; leaderb
   }, [bets]);
 
   const currentUserScore = useMemo(() => {
-    return leaderboard.find((row) => row.name.toLowerCase() === nickname.toLowerCase());
+    const normalizedNickname = normalizeForCompare(nickname);
+    return leaderboard.find((row) => normalizeForCompare(row.name) === normalizedNickname);
   }, [leaderboard, nickname]);
 
   const visibleMatches = matches.filter((match) => isBettingOpen(match) || betsByMatch.has(match.id));
+  const matchHistory = useMemo(() => {
+    const matchesById = new Map(matches.map((match) => [match.id, match]));
+
+    return bets
+      .map((bet) => {
+        const match = matchesById.get(bet.match_id);
+        if (!match) return null;
+
+        const selectedTeam = bet.selected_team_id === match.team_a_id ? match.team_a : match.team_b;
+        const result = match.winner_team_id
+          ? match.winner_team_id === bet.selected_team_id
+            ? "угадал"
+            : "не угадал"
+          : "ожидаем результат";
+
+        return { bet, match, selectedTeam, result };
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      .sort((left, right) => new Date(right.bet.created_at).getTime() - new Date(left.bet.created_at).getTime());
+  }, [bets, matches]);
 
   async function registerName() {
     const cleanName = draftName.trim().replace(/\s+/g, " ");
@@ -186,11 +211,6 @@ export function BettingApp({ matches, leaderboard }: { matches: Match[]; leaderb
     setNickname(result.participant.name);
     setDraftName(result.participant.name);
     setIsChangingName(false);
-  }
-
-  function continueWithStoredName() {
-    setIsChangingName(false);
-    setMessage("");
   }
 
   function changeName() {
@@ -272,10 +292,7 @@ export function BettingApp({ matches, leaderboard }: { matches: Match[]; leaderb
             <p className="text-xs font-black uppercase tracking-wide text-accentText">вы вошли</p>
             <p className="text-2xl font-black">Ваш ник: {nickname}</p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex">
-            <button onClick={continueWithStoredName} className="h-11 rounded-md bg-black px-4 text-sm font-bold text-white">
-              Продолжить
-            </button>
+          <div>
             <button onClick={changeName} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-black/10 px-4 text-sm font-bold">
               <LogOut className="h-4 w-4" />
               Сменить ник
@@ -370,6 +387,38 @@ export function BettingApp({ matches, leaderboard }: { matches: Match[]; leaderb
             </article>
           );
         })}
+      </section>
+
+      <section className="rounded-md border border-black/10 bg-white p-4 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-wide text-accentText">мои прогнозы</p>
+        <h2 className="mt-1 text-2xl font-black">Мои прогнозы</h2>
+        <div className="mt-4 grid gap-2">
+          {matchHistory.map(({ bet, match, selectedTeam, result }) => (
+            <article key={bet.id} className="rounded-md border border-line bg-field p-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-black">{match.team_a.name} vs {match.team_b.name}</p>
+                  <p className="mt-1 text-xs text-ink/60">{match.round} · выбор: {selectedTeam.name}</p>
+                  <p className="mt-1 text-xs text-ink/60">Победитель: {match.winner?.name ?? "пока не выбран"}</p>
+                </div>
+                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ${
+                  result === "угадал"
+                    ? "bg-[#00a36c] text-white"
+                    : result === "не угадал"
+                      ? "bg-[#29415c] text-white"
+                      : "bg-white text-accentText"
+                }`}>
+                  {result}
+                </span>
+              </div>
+            </article>
+          ))}
+          {matchHistory.length === 0 ? (
+            <p className="rounded-md border border-dashed border-line bg-field p-4 text-sm text-ink/60">
+              Здесь появятся ваши прошлые выборы после первого прогноза.
+            </p>
+          ) : null}
+        </div>
       </section>
 
       <section className="rounded-md border border-black/10 bg-white p-4 shadow-sm">

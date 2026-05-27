@@ -596,6 +596,29 @@ export async function recalculateScores() {
   revalidateTournamentPages();
 }
 
+export async function deleteParticipant(formData: FormData) {
+  await requireAdmin();
+  const id = formText(formData, "id");
+
+  if (!id) {
+    redirect(`/admin?message=${encodeURIComponent("Участник не найден")}`);
+  }
+
+  const supabase = getAdminSupabase();
+  const { error } = await supabase
+    .from("participants")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    redirect(`/admin?message=${encodeURIComponent("Не удалось удалить участника")}`);
+  }
+
+  await supabase.rpc("recalculate_scores");
+  revalidateTournamentPages();
+  redirect(`/admin?message=${encodeURIComponent("Участник и его прогнозы удалены")}`);
+}
+
 export async function resetMatchResult(formData: FormData) {
   await requireAdmin();
   const id = formText(formData, "id");

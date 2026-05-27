@@ -18,14 +18,26 @@ export async function POST(request: Request) {
     .ilike("name", name)
     .maybeSingle();
 
-  if (!participant) {
-    return NextResponse.json({ error: "Сначала зарегистрируйте ник" }, { status: 404 });
+  let participantId = participant?.id;
+
+  if (!participantId) {
+    const { data: createdParticipant, error: participantError } = await supabase
+      .from("participants")
+      .insert({ name })
+      .select("id")
+      .single();
+
+    if (participantError) {
+      return NextResponse.json({ error: "Не удалось найти или создать ник" }, { status: 409 });
+    }
+
+    participantId = createdParticipant.id;
   }
 
   const { data, error } = await supabase
     .from("bets")
     .insert({
-      participant_id: participant.id,
+      participant_id: participantId,
       match_id: matchId,
       selected_team_id: selectedTeamId
     })

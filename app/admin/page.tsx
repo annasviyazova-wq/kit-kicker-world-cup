@@ -5,6 +5,7 @@ import {
   adminLogout,
   createTournamentMatch,
   createWorldCupTeams,
+  deleteParticipant,
   deleteTournamentBracket,
   recalculateScores,
   resetMatchResult,
@@ -18,6 +19,12 @@ import { previousRoundByRound, ROUND_MATCH_COUNTS, TOURNAMENT_ROUNDS, type Tourn
 import type { BetDetails, LeaderboardRow, Match, Team } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+type Participant = {
+  id: string;
+  name: string;
+  created_at: string;
+};
 
 function isAdmin() {
   const password = cookies().get("kicker_admin")?.value;
@@ -98,20 +105,22 @@ export default async function AdminPage({
   }
 
   const supabase = getAdminSupabase();
-  const [{ data: teamsData }, { data: matchesData }, { data: betsData }, { data: leaderboardData }] = await Promise.all([
+  const [{ data: teamsData }, { data: matchesData }, { data: betsData }, { data: leaderboardData }, { data: participantsData }] = await Promise.all([
     supabase.from("teams").select("*").order("created_at", { ascending: true }),
     supabase
       .from("matches")
       .select("*, team_a:teams!matches_team_a_id_fkey(*), team_b:teams!matches_team_b_id_fkey(*), winner:teams!matches_winner_team_id_fkey(*)")
       .order("created_at", { ascending: true }),
     supabase.from("bets_with_details").select("*").order("created_at", { ascending: false }),
-    supabase.from("leaderboard").select("*").order("points", { ascending: false }).order("correct_predictions", { ascending: false }).limit(10)
+    supabase.from("leaderboard").select("*").order("points", { ascending: false }).order("correct_predictions", { ascending: false }),
+    supabase.from("participants").select("id,name,created_at").order("created_at", { ascending: true })
   ]);
 
   const teams = (teamsData ?? []) as Team[];
   const matches = (matchesData ?? []) as Match[];
   const bets = (betsData ?? []) as BetDetails[];
   const leaderboard = (leaderboardData ?? []) as LeaderboardRow[];
+  const participants = (participantsData ?? []) as Participant[];
   const selectedRound = TOURNAMENT_ROUNDS.includes(searchParams?.createRound as TournamentRound)
     ? searchParams?.createRound as TournamentRound
     : "1/8 финала";
@@ -120,6 +129,17 @@ export default async function AdminPage({
   const betsByMatch = new Map<string, number>();
   bets.forEach((bet) => {
     betsByMatch.set(bet.match_id, (betsByMatch.get(bet.match_id) ?? 0) + 1);
+  });
+  const scoreByParticipant = new Map(leaderboard.map((row) => [row.participant_id, row]));
+  const participantActivity = new Map<string, { totalPredictions: number; lastActivity: string | null }>();
+  bets.forEach((bet) => {
+    const current = participantActivity.get(bet.participant_id) ?? { totalPredictions: 0, lastActivity: null };
+    participantActivity.set(bet.participant_id, {
+      totalPredictions: current.totalPredictions + 1,
+      lastActivity: !current.lastActivity || new Date(bet.created_at) > new Date(current.lastActivity)
+        ? bet.created_at
+        : current.lastActivity
+    });
   });
 
   return (
@@ -164,6 +184,55 @@ export default async function AdminPage({
           </h2>
         </section>
       ) : null}
+
+      <section className="rounded-md border border-black/10 bg-white p-5 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-wide text-accentText">участники</p>
+        <h2 className="text-2xl font-black">Участники</h2>
+        <p className="mt-1 text-sm text-ink/60">Здесь можно удалить дубль вместе со всеми его прогнозами.</p>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="text-xs uppercase text-ink/50">
+              <tr>
+                <th className="px-3 py-2">Ник</th>
+                <th className="px-3 py-2">Баллы</th>
+                <th className="px-3 py-2">Прогнозы</th>
+                <th className="px-3 py-2">Создан</th>
+                <th className="px-3 py-2">Последняя активность</th>
+                <th className="px-3 py-2">Действие</th>
+              </tr>
+            </thead>
+            <tbody>
+              {participants.map((participant) => {
+                const score = scoreByParticipant.get(participant.id);
+                const activity = participantActivity.get(participant.id);
+
+                return (
+                  <tr key={participant.id} className="border-t border-line">
+                    <td className="px-3 py-3 font-bold">{participant.name}</td>
+                    <td className="px-3 py-3">{score?.points ?? 0}</td>
+                    <td className="px-3 py-3">{activity?.totalPredictions ?? score?.total_predictions ?? 0}</td>
+                    <td className="px-3 py-3 text-ink/65">{formatDate(participant.created_at)}</td>
+                    <td className="px-3 py-3 text-ink/65">{activity?.lastActivity ? formatDate(activity.lastActivity) : "нет прогнозов"}</td>
+                    <td className="px-3 py-3">
+                      <form action={deleteParticipant}>
+                        <input type="hidden" name="id" value={participant.id} />
+                        <ConfirmSubmitButton
+                          message="Удалить участника и все его прогнозы? Это действие нельзя отменить."
+                          className="h-9 rounded-md border border-black bg-white px-3 text-xs font-black text-black hover:bg-field"
+                        >
+                          Удалить участника
+                        </ConfirmSubmitButton>
+                      </form>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {participants.length === 0 ? <p className="mt-3 text-sm text-ink/60">Участников пока нет.</p> : null}
+        </div>
+      </section>
 
       <section className="rounded-md border border-black/10 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -392,7 +461,7 @@ export default async function AdminPage({
           <div className="rounded-md border border-line bg-field p-3">
             <h3 className="mb-2 font-black">Топ участников</h3>
             <div className="space-y-2">
-              {leaderboard.map((row) => (
+              {leaderboard.slice(0, 10).map((row) => (
                 <div key={row.participant_id} className="flex items-center justify-between rounded-md bg-white px-3 py-2 text-sm">
                   <span className="font-bold">#{row.place} {row.name}</span>
                   <span>{row.points} б. · {row.correct_predictions}/{row.total_predictions}</span>
